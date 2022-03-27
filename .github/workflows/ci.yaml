@@ -18,7 +18,7 @@ jobs:
       - name: Setup Android
         uses: actions/setup-java@v2
         with:
-          distrobution: 'zulu'
+          distribution: 'zulu'
           java-version: '17'
       - name: Set up flutter
         uses: subosito/flutter-action@v2
