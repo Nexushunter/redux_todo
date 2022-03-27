@@ -47,22 +47,24 @@ class _TodosPageState extends State<TodosPage> {
   Offset? _lpd;
   Widget? _contextMenu;
   bool _allSelected = false;
+  bool _showHidden = false;
+
+  List<Todo> _filtered = [];
 
   List<Widget> _buildMultiOptionActions(TodoStore store) {
     final selectedCount =
-        store.state.todos.where((element) => element.selected).toList().length;
+        _filtered.where((element) => element.selected).toList().length;
     return [
       IconButton(
           onPressed: () => store.dispatch(RemoveTodos(
-              removed: store.state.todos
-                  .where((element) => element.selected)
-                  .toList())),
+              removed:
+                  _filtered.where((element) => element.selected).toList())),
           icon: Icon(Icons.restore_from_trash_outlined)),
       IconButton(
           onPressed: () => setState(() {
                 _allSelected = !_allSelected;
                 store.dispatch(SelectTodos(
-                    selected: _allSelected ? store.state.todos : [],
+                    selected: _allSelected ? _filtered : [],
                     allSelected: _allSelected));
               }),
           icon: Icon(selectedCount == store.state.todos.length
@@ -78,50 +80,59 @@ class _TodosPageState extends State<TodosPage> {
     return StoreConnector<TodoState, TodoStore>(
       converter: (store) => store as TodoStore,
       // TODO: Use a view model instead of the store directly
-      builder: (ctx, store) => Scaffold(
-        appBar: AppBar(
-          title: Text(widget.title),
-          actions: [
-            if (store.state.todos
-                .where((element) => element.selected)
-                .isNotEmpty)
-              ..._buildMultiOptionActions(store),
-            IconButton(
-              icon: const Icon(Icons.filter_alt_outlined),
-              onPressed: () {},
-            ),
-          ],
-        ),
-        body: Center(
-          child: GestureDetector(
-            onTap: () => _dismissContextMenu(),
-            child: Stack(
-              children: [
-                ListView.builder(
-                  itemCount: store.state.todos.length,
-                  itemBuilder: (ctx, i) => GestureDetector(
-                    onLongPressDown: (lpd) => setState(() {
-                      _lpd = lpd.globalPosition;
-                    }),
-                    child: TodoTile(
-                      todo: store.state.todos[i],
-                      openCallback: _onOpen(store),
-                      editCallback: _onTodoLongPress(store, _lpd),
-                      selectCallback: _onSelect(store),
+      builder: (ctx, store) {
+        // TODO: Filter the list of todos
+        _filtered = store.state.todos;
+
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(widget.title),
+            actions: [
+              if (_filtered.where((element) => element.selected).isNotEmpty)
+                ..._buildMultiOptionActions(store),
+              GestureDetector(
+                child: const Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: Icon(Icons.filter_alt_outlined),
+                ),
+                onTapDown: (details) {
+                  // TODO: Implement filtering
+                  // _buildFilterMenu(details.globalPosition);
+                },
+              ),
+            ],
+          ),
+          body: Center(
+            child: GestureDetector(
+              onTap: () => _dismissContextMenu(),
+              child: Stack(
+                children: [
+                  ListView.builder(
+                    itemCount: _filtered.length,
+                    itemBuilder: (ctx, i) => GestureDetector(
+                      onLongPressDown: (lpd) => setState(() {
+                        _lpd = lpd.globalPosition;
+                      }),
+                      child: TodoTile(
+                        todo: _filtered[i],
+                        openCallback: _onOpen(store),
+                        editCallback: _onTodoLongPress(store, _lpd),
+                        selectCallback: _onSelect(store),
+                      ),
                     ),
                   ),
-                ),
-                if (_contextMenu != null) _contextMenu!,
-              ],
+                  if (_contextMenu != null) _contextMenu!,
+                ],
+              ),
             ),
           ),
-        ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: _create(store),
-          tooltip: 'Create',
-          child: const Icon(Icons.edit_outlined),
-        ), // This trailing comma makes auto-formatting nicer for build methods.
-      ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: _create(store),
+            tooltip: 'Create',
+            child: const Icon(Icons.edit_outlined),
+          ), // This trailing comma makes auto-formatting nicer for build methods.
+        );
+      },
     );
   }
 
@@ -169,34 +180,60 @@ class _TodosPageState extends State<TodosPage> {
   void Function(Todo) _onTodoLongPress(TodoStore store, Offset? offset) {
     return (t) {
       setState(() {
-        _contextMenu = Positioned.fromRect(
-          rect: Rect.fromCenter(center: offset!, width: 80, height: 64),
-          child: Card(
-            child: Column(
-              children: [
-                MaterialButton(
-                  onPressed: () {
-                    // Navigator.of(ctx).pop();
-                    _onOpen(store)(t);
-                    _dismissContextMenu();
-                  },
-                  child: const Text('Edit'),
-                ),
-                MaterialButton(
-                  onPressed: () {
-                    // Navigator.of(ctx).pop();
-                    _dismissContextMenu();
-                    store.dispatch(RemoveTodos(removed: [t]));
-                  },
-                  child: const Text('Remove'),
-                )
-              ],
+        final child = Column(
+          children: [
+            MaterialButton(
+              onPressed: () {
+                _onOpen(store)(t);
+                _dismissContextMenu();
+              },
+              child: const Text('Edit'),
             ),
-          ),
+            MaterialButton(
+              onPressed: () {
+                _dismissContextMenu();
+                store.dispatch(RemoveTodos(removed: [t]));
+              },
+              child: const Text('Remove'),
+            )
+          ],
         );
+        _contextMenu = _buildContextMenu(offset!, child);
       });
     };
   }
+
+  Widget _buildContextMenu(Offset offset, Widget child,
+      {double width = 80, double height = 64}) {
+    return Positioned.fromRect(
+      rect: Rect.fromCenter(center: offset, width: width, height: height),
+      child: Card(child: child),
+    );
+  }
+
+  void _buildFilterMenu(Offset offset) => setState(() {
+        _contextMenu = _buildContextMenu(
+          offset..translate(-80, -80),
+          Column(
+            children: [
+              // TODO: Add search
+              MaterialButton(
+                onPressed: () {
+                  setState(() {
+                    _showHidden = !_showHidden;
+                    _filtered = _filtered
+                        .where((e) => !e.visible == _showHidden)
+                        .toList();
+                  });
+                },
+                child: Text('Show/Hide Todos'),
+              ),
+            ],
+          ),
+          height: 120,
+          width: 100,
+        );
+      });
 
   void Function(Todo) _onSelect(TodoStore store) {
     return (t) {

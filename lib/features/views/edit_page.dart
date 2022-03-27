@@ -32,8 +32,13 @@ class _EditTodoPageState extends State<EditPage> {
   /// Clean up the current todo state.
   @override
   void dispose() {
-    widget.store.dispatch(EditTodo(widget.todo,
-        name: _nameController.text, body: _bodyController.text));
+    widget.store.dispatch(EditTodo(
+      widget.todo,
+      name: _nameController.text,
+      body: _bodyController.text,
+      visible: _visible,
+      favourite: _favourite,
+    ));
     super.dispose();
   }
 
@@ -53,10 +58,7 @@ class _EditTodoPageState extends State<EditPage> {
           _favourite,
           () => setState(() {
             _favourite = !_favourite;
-            widget.store.dispatch(EditTodo(widget.todo,
-                name: _nameController.text,
-                body: _bodyController.text,
-                favourite: _favourite));
+            widget.store.dispatch(EditTodo(widget.todo, favourite: _favourite));
           }),
         ),
         _buildAction(
@@ -67,10 +69,7 @@ class _EditTodoPageState extends State<EditPage> {
           _visible,
           () => setState(() {
             _visible = !_visible;
-            widget.store.dispatch(EditTodo(widget.todo,
-                name: _nameController.text,
-                body: _bodyController.text,
-                favourite: _favourite));
+            widget.store.dispatch(EditTodo(widget.todo, visible: _visible));
           }),
         )
       ];
@@ -96,9 +95,6 @@ class _EditTodoPageState extends State<EditPage> {
                 maxLines: null,
                 keyboardType: TextInputType.multiline,
                 controller: _bodyController,
-                onSubmitted: (String s) {
-                  _bodyController.text += '\n';
-                },
                 cursorColor: Theme.of(context).colorScheme.primary,
               ),
             ),

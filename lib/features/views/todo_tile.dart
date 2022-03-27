@@ -14,19 +14,15 @@ class TodoTile extends StatelessWidget {
     required this.openCallback,
     required this.editCallback,
     required this.selectCallback,
-  });
+  }) : super(key: Key('${todo.name}-tile'));
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: todo.visible
-          ? Checkbox(
-              value: todo.selected,
-              onChanged: (checked) => selectCallback(todo),
-            )
-          : Container(
-              color: Colors.transparent,
-            ),
+      leading: Checkbox(
+        value: todo.selected,
+        onChanged: (checked) => selectCallback(todo),
+      ),
       title: Text(todo.name),
       subtitle: Text(DateTime.fromMillisecondsSinceEpoch(todo.timeOfDay)
           .toLocal()
