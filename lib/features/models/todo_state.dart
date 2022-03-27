@@ -10,4 +10,6 @@ class TodoState with _$TodoState {
   const factory TodoState({required List<Todo> todos}) = _TodoState;
   factory TodoState.fromJson(Map<String, dynamic> json) =>
       _$TodoStateFromJson(json);
+
+  static TodoState empty = const TodoState(todos: []);
 }

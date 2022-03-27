@@ -44,8 +44,13 @@ class _EditTodoPageState extends State<EditPage> {
 
   /// Builds a simple action button
   Widget _buildAction(
-      Map<bool, IconData> iconMapping, bool condition, void Function() action) {
-    return IconButton(onPressed: action, icon: Icon(iconMapping[condition]));
+      Map<bool, IconData> iconMapping, bool condition, void Function() action,
+      {Key? key}) {
+    return IconButton(
+      onPressed: action,
+      icon: Icon(iconMapping[condition]),
+      key: key,
+    );
   }
 
   /// Builds actions to modify current todo.
@@ -60,6 +65,7 @@ class _EditTodoPageState extends State<EditPage> {
             _favourite = !_favourite;
             widget.store.dispatch(EditTodo(widget.todo, favourite: _favourite));
           }),
+          key: const Key('favourite-button'),
         ),
         _buildAction(
           <bool, IconData>{
@@ -71,6 +77,7 @@ class _EditTodoPageState extends State<EditPage> {
             _visible = !_visible;
             widget.store.dispatch(EditTodo(widget.todo, visible: _visible));
           }),
+          key: const Key('visible-button'),
         )
       ];
 
@@ -82,12 +89,17 @@ class _EditTodoPageState extends State<EditPage> {
         children: [
           Card(
             child: Padding(
-                padding: const EdgeInsets.all(4.0),
-                child: TextField(controller: _nameController)),
+              padding: const EdgeInsets.all(4.0),
+              child: TextField(
+                key: const Key('edit-name-field'),
+                controller: _nameController,
+              ),
+            ),
           ),
           Expanded(
             child: Card(
               child: TextField(
+                key: const Key('edit-body-field'),
                 autofocus: true,
                 showCursor: true,
                 expands: true,

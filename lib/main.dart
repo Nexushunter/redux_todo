@@ -6,12 +6,7 @@ import 'package:redux_todo/features/views/views.dart';
 import 'package:uuid/uuid.dart';
 
 void main() {
-  final store = TodoStore(
-    TodoStore.todoReducer,
-    initialState: const TodoState(
-      todos: [],
-    ),
-  );
+  final store = TodoStore();
 
   runApp(StoreProvider(store: store, child: const ReduxTodoApp()));
 }
