@@ -20,13 +20,23 @@ class TodoStore extends Store<TodoState> {
             ..add(action.todo)
             ..sort(_sort));
     } else if (action is SelectTodos) {
-      return TodoState(todos: action.selected..sort(_sort));
+      if (action.selected.isEmpty) {
+        return TodoState(
+          todos: state.todos.map((e) => e.copyWith(selected: false)).toList(),
+        );
+      }
+
+      final todos = <Todo>[];
+
+      action.selected.forEach((e) => todos
+          .add(e.copyWith(selected: action.allSelected ? true : !e.selected)));
+
+      todos.addAll(state.todos.where(_shouldRetain(action.selected)));
+      return TodoState(todos: todos..sort(_sort));
     } else if (action is RemoveTodos) {
       return TodoState(
           todos: List.from(state.todos)
-            ..retainWhere((e) {
-              return true;
-            })
+            ..retainWhere(_shouldRetain(action.removed))
             ..sort(_sort));
     } else if (action is EditTodo) {
       return TodoState(
@@ -44,6 +54,21 @@ class TodoStore extends Store<TodoState> {
     } else {
       return state;
     }
+  }
+
+  static bool Function(Todo) _shouldRetain(List<Todo> todos) {
+    return (e) {
+      bool keep = true;
+
+      for (final item in todos) {
+        if (e.uuid == item.uuid) {
+          keep = false;
+          break;
+        }
+      }
+
+      return keep;
+    };
   }
 
   static int _sort(Todo a, Todo b) {

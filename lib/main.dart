@@ -44,6 +44,35 @@ class TodosPage extends StatefulWidget {
 }
 
 class _TodosPageState extends State<TodosPage> {
+  Offset? _lpd;
+  Widget? _contextMenu;
+  bool _allSelected = false;
+
+  List<Widget> _buildMultiOptionActions(TodoStore store) {
+    final selectedCount =
+        store.state.todos.where((element) => element.selected).toList().length;
+    return [
+      IconButton(
+          onPressed: () => store.dispatch(RemoveTodos(
+              removed: store.state.todos
+                  .where((element) => element.selected)
+                  .toList())),
+          icon: Icon(Icons.restore_from_trash_outlined)),
+      IconButton(
+          onPressed: () => setState(() {
+                _allSelected = !_allSelected;
+                store.dispatch(SelectTodos(
+                    selected: _allSelected ? store.state.todos : [],
+                    allSelected: _allSelected));
+              }),
+          icon: Icon(selectedCount == store.state.todos.length
+              ? Icons.check_box_outlined
+              : (selectedCount >= 1 && selectedCount < store.state.todos.length)
+                  ? Icons.indeterminate_check_box_outlined
+                  : Icons.check_box_outline_blank)),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     return StoreConnector<TodoState, TodoStore>(
@@ -52,15 +81,38 @@ class _TodosPageState extends State<TodosPage> {
       builder: (ctx, store) => Scaffold(
         appBar: AppBar(
           title: Text(widget.title),
+          actions: [
+            if (store.state.todos
+                .where((element) => element.selected)
+                .isNotEmpty)
+              ..._buildMultiOptionActions(store),
+            IconButton(
+              icon: const Icon(Icons.filter_alt_outlined),
+              onPressed: () {},
+            ),
+          ],
         ),
         body: Center(
-          child: ListView.builder(
-            itemCount: store.state.todos.length,
-            itemBuilder: (ctx, i) => TodoTile(
-              todo: store.state.todos[i],
-              openCallback: _onOpen(store),
-              editCallback: _onLongPress(store),
-              selectCallback: _onSelect(store),
+          child: GestureDetector(
+            onTap: () => _dismissContextMenu(),
+            child: Stack(
+              children: [
+                ListView.builder(
+                  itemCount: store.state.todos.length,
+                  itemBuilder: (ctx, i) => GestureDetector(
+                    onLongPressDown: (lpd) => setState(() {
+                      _lpd = lpd.globalPosition;
+                    }),
+                    child: TodoTile(
+                      todo: store.state.todos[i],
+                      openCallback: _onOpen(store),
+                      editCallback: _onTodoLongPress(store, _lpd),
+                      selectCallback: _onSelect(store),
+                    ),
+                  ),
+                ),
+                if (_contextMenu != null) _contextMenu!,
+              ],
             ),
           ),
         ),
@@ -110,38 +162,45 @@ class _TodosPageState extends State<TodosPage> {
     };
   }
 
-  void Function(Todo) _onLongPress(TodoStore store) {
-    return (t) async {
-      final cm = Column(
-        children: [
-          MaterialButton(
-            onPressed: () {},
-            child: const Text('Edit'),
-          ),
-          MaterialButton(
-            onPressed: () {},
-            child: const Text('Remove'),
-          )
-        ],
-      );
+  void _dismissContextMenu() => setState(() {
+        _contextMenu = null;
+      });
 
-      await showDialog(
-          context: context,
-          builder: (_) => Container(
-                color: Theme.of(context).colorScheme.secondaryContainer,
-              ));
+  void Function(Todo) _onTodoLongPress(TodoStore store, Offset? offset) {
+    return (t) {
+      setState(() {
+        _contextMenu = Positioned.fromRect(
+          rect: Rect.fromCenter(center: offset!, width: 80, height: 64),
+          child: Card(
+            child: Column(
+              children: [
+                MaterialButton(
+                  onPressed: () {
+                    // Navigator.of(ctx).pop();
+                    _onOpen(store)(t);
+                    _dismissContextMenu();
+                  },
+                  child: const Text('Edit'),
+                ),
+                MaterialButton(
+                  onPressed: () {
+                    // Navigator.of(ctx).pop();
+                    _dismissContextMenu();
+                    store.dispatch(RemoveTodos(removed: [t]));
+                  },
+                  child: const Text('Remove'),
+                )
+              ],
+            ),
+          ),
+        );
+      });
     };
   }
 
   void Function(Todo) _onSelect(TodoStore store) {
     return (t) {
-      store.dispatch(
-        SelectTodos(
-          selected: List.from(store.state.todos)
-            ..removeWhere((element) => element == t)
-            ..add(t.copyWith(selected: !t.selected)),
-        ),
-      );
+      store.dispatch(SelectTodos(selected: [t]));
     };
   }
 }

@@ -4,7 +4,8 @@ abstract class TodoAction {}
 
 class SelectTodos extends TodoAction {
   final List<Todo> selected;
-  SelectTodos({this.selected = const []}) : super();
+  final bool allSelected;
+  SelectTodos({this.selected = const [], this.allSelected = false}) : super();
 }
 
 class AddTodo extends TodoAction {
