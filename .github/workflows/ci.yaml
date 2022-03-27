@@ -1,3 +1,4 @@
+name: CI
 on:
   push:
     branches:
@@ -20,7 +21,7 @@ jobs:
           distrobution: 'zulu'
           java-version: '17'
       - name: Set up flutter
-        uses: actions/flutter-action@v2
+        uses: subosito/flutter-action@v2
         with:
           channel: stable
       - name: Run CI
