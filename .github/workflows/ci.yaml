@@ -4,6 +4,11 @@ on:
     branches:
       # TODO: Make available to public??
       - master
+    paths-ignore:
+      - "**/*.md"
+      - "**/*.yaml"
+      - "**/*.g.dart"
+      - "**/*.freezed.dart"
 
 jobs:
   ci-stable:
